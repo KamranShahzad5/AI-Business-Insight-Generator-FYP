@@ -3,28 +3,33 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
 
 // @route   POST api/auth/register
 // @desc    Register a user
 // @access  Public
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
-
   try {
-    let user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    let user = await User.findOne({ email: normalizedEmail });
     if (user) {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
-    user = new User({ name, email, password });
-
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user = new User({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+    });
 
     await user.save();
 
     const payload = { user: { id: user.id } };
-
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
       if (err) throw err;
       res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
@@ -40,9 +45,10 @@ router.post('/register', async (req, res) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    let user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    let user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
@@ -53,7 +59,6 @@ router.post('/login', async (req, res) => {
     }
 
     const payload = { user: { id: user.id } };
-
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
       if (err) throw err;
       res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
@@ -67,7 +72,6 @@ router.post('/login', async (req, res) => {
 // @route   GET api/auth/me
 // @desc    Get logged in user
 // @access  Private
-const auth = require('../middleware/auth');
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
