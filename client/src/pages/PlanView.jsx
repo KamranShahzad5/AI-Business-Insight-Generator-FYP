@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Edit3, Trash2, Check, X, FileText,
-  ListChecks, Banknote, Shield, Calendar, BarChart2, Search,
+  ListChecks, Banknote, Shield, Calendar, BarChart2, Search, MessageSquare,
 } from 'lucide-react';
 import { formatDate } from '../utils/dateUtils';
 import BusinessPlanTab from '../components/plan/BusinessPlanTab';
@@ -17,12 +17,12 @@ import MarketResearchTab from '../components/plan/MarketResearchTab';
 import AnalyticsDashboard from '../components/plan/AnalyticsDashboard';
 
 const tabs = [
-  { id: 'plan', label: 'Business Plan', icon: FileText },
-  { id: 'tasks', label: 'Tasks', icon: ListChecks },
-  { id: 'costs', label: 'Cost Estimates', icon: Banknote },
-  { id: 'risks', label: 'Risk Analysis', icon: Shield },
-  { id: 'market', label: 'Market Research', icon: Search },
-  { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+  { id: 'plan',      label: 'Business Plan',   icon: FileText   },
+  { id: 'tasks',     label: 'Tasks',           icon: ListChecks },
+  { id: 'costs',     label: 'Cost Estimates',  icon: Banknote   },
+  { id: 'risks',     label: 'Risk Analysis',   icon: Shield     },
+  { id: 'market',    label: 'Market Research', icon: Search     },
+  { id: 'analytics', label: 'Analytics',       icon: BarChart2  },
 ];
 
 export default function PlanView() {
@@ -33,10 +33,11 @@ export default function PlanView() {
   const [activeTab, setActiveTab] = useState('plan');
   const [editing, setEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(plan?.title || '');
+  const [showChat, setShowChat] = useState(false);
 
   if (!plan) {
     return (
-      <div className="flex flex-col items-center justify-center py-32">
+      <div className="flex flex-col items-center justify-center py-32 px-4 text-center">
         <div className="text-5xl mb-4">🔍</div>
         <h2 className="text-xl font-display font-bold text-slate-100 mb-2">Plan not found</h2>
         <p className="text-slate-400 text-sm mb-6">This plan may have been deleted or doesn't exist.</p>
@@ -66,19 +67,21 @@ export default function PlanView() {
   const tasksTotal = plan.tasks?.length || 0;
 
   return (
-    <div className="flex gap-5 h-[calc(100vh-9rem)]">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 lg:h-[calc(100vh-9rem)]">
+
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
         {/* Back + header */}
-        <div className="flex-shrink-0 mb-5">
+        <div className="flex-shrink-0 mb-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 mb-4 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 mb-3 transition-colors"
           >
             <ArrowLeft size={13} /> Back to Dashboard
           </button>
 
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               {editing ? (
                 <div className="flex items-center gap-2">
@@ -87,19 +90,19 @@ export default function PlanView() {
                     onChange={e => setNewTitle(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditing(false); }}
                     autoFocus
-                    className="input-field text-lg font-display font-bold py-2"
+                    className="input-field text-base font-display font-bold py-2"
                   />
-                  <button onClick={handleRename} className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-all">
+                  <button onClick={handleRename} className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-all flex-shrink-0">
                     <Check size={15} />
                   </button>
-                  <button onClick={() => setEditing(false)} className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-white/10 transition-all">
+                  <button onClick={() => setEditing(false)} className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-white/10 transition-all flex-shrink-0">
                     <X size={15} />
                   </button>
                 </div>
               ) : (
-                <h1 className="text-xl font-display font-bold text-slate-100 truncate">{plan.title}</h1>
+                <h1 className="text-lg sm:text-xl font-display font-bold text-slate-100 truncate">{plan.title}</h1>
               )}
-              <div className="flex items-center gap-3 mt-1.5">
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                   <Calendar size={11} />
                   {formatDate(plan.createdAt)}
@@ -110,42 +113,60 @@ export default function PlanView() {
                   </span>
                 )}
                 <span className="text-xs text-slate-500">
-                  {tasksDone}/{tasksTotal} tasks completed
+                  {tasksDone}/{tasksTotal} tasks done
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* AI Chat toggle — mobile only */}
+              <button
+                onClick={() => setShowChat(v => !v)}
+                className="lg:hidden w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 hover:bg-brand-500/20 transition-all"
+                title="AI Chat"
+              >
+                <MessageSquare size={15} />
+              </button>
               {!editing && (
                 <button
                   onClick={() => { setEditing(true); setNewTitle(plan.title); }}
-                  className="btn-secondary text-xs py-2 px-3"
+                  className="btn-secondary text-xs py-2 px-2 sm:px-3"
                 >
-                  <Edit3 size={13} /> Rename
+                  <Edit3 size={13} />
+                  <span className="hidden sm:inline">Rename</span>
                 </button>
               )}
-              <button onClick={handleDelete} className="btn-danger text-xs py-2 px-3">
-                <Trash2 size={13} /> Delete
+              <button onClick={handleDelete} className="btn-danger text-xs py-2 px-2 sm:px-3">
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 flex-shrink-0 mb-5 bg-white/3 p-1 rounded-xl border border-white/5 w-fit">
-          {tabs.map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={activeTab === tab.id ? 'tab-btn-active' : 'tab-btn'}
-              >
-                <Icon size={13} />
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Tabs — scrollable on mobile */}
+        <div className="flex-shrink-0 mb-4 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1 bg-white/3 p-1 rounded-xl border border-white/5 w-max min-w-full sm:w-fit">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                    activeTab === tab.id
+                      ? 'bg-brand-500/15 text-brand-300 border border-brand-500/20'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  <Icon size={12} />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Tab content */}
@@ -159,19 +180,24 @@ export default function PlanView() {
               transition={{ duration: 0.2 }}
               className="h-full"
             >
-              {activeTab === 'plan' && <BusinessPlanTab plan={plan} />}
-              {activeTab === 'tasks' && <TasksTab plan={plan} updatePlan={updatePlan} />}
-              {activeTab === 'costs' && <CostsTab plan={plan} />}
-              {activeTab === 'risks' && <RisksTab plan={plan} />}
-              {activeTab === 'market' && <MarketResearchTab plan={plan} />}
+              {activeTab === 'plan'      && <BusinessPlanTab plan={plan} />}
+              {activeTab === 'tasks'     && <TasksTab plan={plan} updatePlan={updatePlan} />}
+              {activeTab === 'costs'     && <CostsTab plan={plan} />}
+              {activeTab === 'risks'     && <RisksTab plan={plan} />}
+              {activeTab === 'market'    && <MarketResearchTab plan={plan} updatePlan={updatePlan} />}
               {activeTab === 'analytics' && <AnalyticsDashboard plan={plan} />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
 
-      {/* AI Chat Panel */}
-      <AIChatPanel plan={plan} updatePlan={updatePlan} />
+      {/* AI Chat Panel — desktop: always visible, mobile: toggle */}
+      <div className={`lg:block ${showChat ? 'block' : 'hidden'}`}>
+        <AIChatPanel plan={plan} updatePlan={updatePlan} />
+      </div>
     </div>
+  );
+}
+
   );
 }
