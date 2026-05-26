@@ -191,7 +191,7 @@ function SidebarContent({ sidebarOpen, setSidebarOpen, user, plans, handleLogout
         >
           {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
         </button>
-      )}
+      )}  
     </>
   );
 }
