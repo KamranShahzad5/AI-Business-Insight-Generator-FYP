@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Sparkles, LogOut, ChevronLeft,
-  ChevronRight, Zap, FileText, Settings,
+  ChevronRight, Zap, FileText,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import clsx from 'clsx';
@@ -21,12 +21,62 @@ export default function Sidebar() {
     navigate('/');
   };
 
+  const handleNavClick = () => {
+    // Close sidebar on mobile after clicking a nav item
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
-    <motion.aside
-      animate={{ width: sidebarOpen ? 240 : 72 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="relative flex flex-col h-screen bg-surface-900 border-r border-white/5 overflow-hidden flex-shrink-0"
-    >
+    <>
+      {/* ── Desktop sidebar (always visible, collapsible) ── */}
+      <motion.aside
+        animate={{ width: sidebarOpen ? 240 : 72 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="relative hidden lg:flex flex-col h-screen bg-surface-900 border-r border-white/5 overflow-hidden flex-shrink-0 z-30"
+      >
+        <SidebarContent
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          user={user}
+          plans={plans}
+          handleLogout={handleLogout}
+          handleNavClick={handleNavClick}
+          showToggle={true}
+        />
+      </motion.aside>
+
+      {/* ── Mobile sidebar (slide in from left) ── */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.aside
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="fixed top-0 left-0 lg:hidden flex flex-col h-screen w-64 bg-surface-900 border-r border-white/5 overflow-hidden flex-shrink-0 z-30"
+          >
+            <SidebarContent
+              sidebarOpen={true}
+              setSidebarOpen={setSidebarOpen}
+              user={user}
+              plans={plans}
+              handleLogout={handleLogout}
+              handleNavClick={handleNavClick}
+              showToggle={false}
+            />
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ── Shared sidebar content ────────────────────────────────────────────────────
+function SidebarContent({ sidebarOpen, setSidebarOpen, user, plans, handleLogout, handleNavClick, showToggle }) {
+  return (
+    <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5 flex-shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center flex-shrink-0 shadow-glow-sm">
@@ -56,6 +106,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               clsx('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                 isActive
@@ -83,11 +134,7 @@ export default function Sidebar() {
 
         {/* Recent Plans */}
         {sidebarOpen && plans.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="pt-4"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-4">
             <p className="px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-600 mb-2">
               Recent Plans
             </p>
@@ -95,6 +142,7 @@ export default function Sidebar() {
               <NavLink
                 key={plan.id}
                 to={`/plan/${plan.id}`}
+                onClick={handleNavClick}
                 className={({ isActive }) =>
                   clsx('flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 truncate',
                     isActive
@@ -135,13 +183,16 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Toggle button */}
-      <button
-        onClick={() => setSidebarOpen(v => !v)}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-surface-800 border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-brand-600 hover:border-brand-500 transition-all duration-200 z-10"
-      >
-        {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
-      </button>
-    </motion.aside>
+      {/* Toggle button — desktop only */}
+      {showToggle && (
+        <button
+          onClick={() => setSidebarOpen(v => !v)}
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-surface-800 border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-brand-600 hover:border-brand-500 transition-all duration-200 z-10"
+        >
+          {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
+        </button>
+      )}
+    </>
   );
 }
+
