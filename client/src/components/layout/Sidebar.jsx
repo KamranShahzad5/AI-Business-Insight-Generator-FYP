@@ -195,4 +195,3 @@ function SidebarContent({ sidebarOpen, setSidebarOpen, user, plans, handleLogout
     </>
   );
 }
-
