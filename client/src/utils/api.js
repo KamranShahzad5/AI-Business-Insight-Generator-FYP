@@ -1,6 +1,6 @@
 // ── Base URL ─────────────────────────────────────────────────────────────────
 // Make sure your frontend root .env has: VITE_API_URL=http://localhost:5000/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://ai-business-insight-generator-fyp-2.onrender.com/api';
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 const getHeaders = () => {
