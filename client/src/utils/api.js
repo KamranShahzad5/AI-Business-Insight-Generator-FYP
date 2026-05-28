@@ -20,8 +20,7 @@ const request = async (url, options = {}) => {
   } catch {
     throw new Error('Cannot connect to server. Please try again in a moment.');
   }
-  let data;
-  // ✅ NEW - safe
+ // ✅ NEW - safe
 const text = await res.text();
 let data = {};
 try {
