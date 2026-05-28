@@ -20,8 +20,14 @@ const getGroqClient = () => {
 // ── Helper: strip markdown fences from AI output ─────────────────────────────
 const cleanJSON = (text) => {
   let t = text.trim();
-  // Remove ```json ... ``` or ``` ... ```
-  t = t.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+  // Remove markdown code fences
+  t = t.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/g, '');
+  // Find the first { and last } to extract pure JSON
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start !== -1 && end !== -1) {
+    t = t.slice(start, end + 1);
+  }
   return t.trim();
 };
 
