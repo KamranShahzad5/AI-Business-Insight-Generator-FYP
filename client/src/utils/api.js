@@ -21,11 +21,14 @@ const request = async (url, options = {}) => {
     throw new Error('Cannot connect to server. Please try again in a moment.');
   }
   let data;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error(`Server error (${res.status})`);
-  }
+  // ✅ NEW - safe
+const text = await res.text();
+let data = {};
+try {
+  data = text ? JSON.parse(text) : {};
+} catch {
+  throw new Error(`Server returned invalid response (status ${res.status})`);
+}
   if (!res.ok) {
     if (res.status === 401) {
       localStorage.removeItem('auth_user');
