@@ -1,8 +1,5 @@
-// ── Base URL ─────────────────────────────────────────────────────────────────
-// Production: VITE_API_URL=https://ai-business-insight-generator-fyp-2.onrender.com/api
 const API_URL = import.meta.env.VITE_API_URL || 'https://ai-business-insight-generator-fyp-2.onrender.com/api';
 
-// ── Auth helpers ─────────────────────────────────────────────────────────────
 const getHeaders = () => {
   try {
     const stored = localStorage.getItem('auth_user');
@@ -16,9 +13,13 @@ const getHeaders = () => {
   }
 };
 
-// ── Generic fetch helper ─────────────────────────────────────────────────────
 const request = async (url, options = {}) => {
-  const res = await fetch(url, options);
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch {
+    throw new Error('Cannot connect to server. Please try again in a moment.');
+  }
   let data;
   try {
     data = await res.json();
@@ -36,9 +37,7 @@ const request = async (url, options = {}) => {
   return data;
 };
 
-// ── API object ───────────────────────────────────────────────────────────────
 export const api = {
-  // ── Auth ──────────────────────────────────────────────────────────────────
   register: (userData) =>
     request(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -53,7 +52,6 @@ export const api = {
       body: JSON.stringify(credentials),
     }),
 
-  // ── Plans ─────────────────────────────────────────────────────────────────
   getPlans: () =>
     request(`${API_URL}/plans`, { headers: getHeaders() }),
 
@@ -77,7 +75,6 @@ export const api = {
       headers: getHeaders(),
     }),
 
-  // ── AI ────────────────────────────────────────────────────────────────────
   generateAIPlan: (idea, industry, budget) =>
     request(`${API_URL}/ai/generate`, {
       method: 'POST',
@@ -93,7 +90,6 @@ export const api = {
     }),
 };
 
-// ── Market Research ───────────────────────────────────────────────────────
 export const getMarketResearch = (idea, industry, budget) => {
   const url = import.meta.env.VITE_API_URL || 'https://ai-business-insight-generator-fyp-2.onrender.com/api';
   return fetch(`${url}/market/research`, {
