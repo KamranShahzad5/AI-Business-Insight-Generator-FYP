@@ -26,8 +26,8 @@ const parseWithRetry = async (client, messages, attempt = 1) => {
   const completion = await client.chat.completions.create({
     model: 'llama-3.1-8b-instant',
     messages,
-    temperature: attempt === 1 ? 0.7 : 0.3, // lower temp on retry
-    max_tokens: 4000,
+    temperature: attempt === 1 ? 0.7 : 0.3,
+    max_tokens: 2500,
   });
 
   const rawText = completion.choices[0]?.message?.content || '';
@@ -41,20 +41,16 @@ const parseWithRetry = async (client, messages, attempt = 1) => {
   } catch (e) {
     if (attempt < 3) {
       console.log(`JSON parse failed on attempt ${attempt}, retrying...`);
-      // Add a message asking to fix the JSON
       messages.push({ role: 'assistant', content: rawText });
       messages.push({
         role: 'user',
-        content: 'Your response contained invalid JSON. Return ONLY the corrected valid JSON object with no markdown, no backticks, no explanation. Just the raw JSON starting with { and ending with }.'
+        content: 'Your response contained invalid JSON. Return ONLY the corrected valid JSON object with no markdown, no backticks, no explanation. Just the raw JSON starting with { and ending with }.',
       });
       return parseWithRetry(client, messages, attempt + 1);
     }
-    // Last attempt: try regex extraction
     const match = rawText.match(/\{[\s\S]*\}/);
     if (match) {
-      try {
-        return JSON.parse(match[0]);
-      } catch {}
+      try { return JSON.parse(match[0]); } catch {}
     }
     console.error('All parse attempts failed. Raw:', rawText.slice(0, 500));
     throw new Error('AI returned malformed JSON after 3 attempts. Please try again.');
@@ -72,58 +68,42 @@ router.post('/generate', async (req, res) => {
 
     const client = getGroqClient();
 
-    const prompt = `You are an expert AI business advisor. Generate a business plan as a single valid JSON object.
+    const prompt = `You are an expert AI business advisor. Return ONLY a valid JSON object, no markdown, no backticks.
 
-BUSINESS IDEA: "${idea}"
-INDUSTRY: ${industry}
-BUDGET: PKR ${budget}
+Idea: "${idea}"
+Industry: ${industry}
+Budget: PKR ${budget}
 
-STRICT RULES:
-1. Return ONLY raw JSON — no markdown, no backticks, no text before or after
-2. All money values must be integers in PKR (no dollar signs)
-3. Tasks and risks must be specific to the idea above
-4. Generate exactly 10 tasks and exactly 6 risks
-5. Every string value must use straight quotes and no unescaped special characters
+Rules:
+- All money as integers in PKR
+- Exactly 10 tasks, exactly 6 risks
+- Specific to the idea above
 
-JSON STRUCTURE (follow exactly):
 {
-  "title": "Short catchy business name",
+  "title": "Short business name",
   "businessPlan": {
-    "executiveSummary": "3-4 sentences about the business",
-    "marketAnalysis": "3-4 sentences about the market",
-    "productDescription": "3-4 sentences about the product/service",
-    "marketingStrategy": "3-4 sentences about marketing",
-    "operationsPlan": "3-4 sentences about operations",
-    "financialOverview": "3-4 sentences about financials"
+    "executiveSummary": "3 sentences",
+    "marketAnalysis": "3 sentences",
+    "productDescription": "3 sentences",
+    "marketingStrategy": "3 sentences",
+    "operationsPlan": "3 sentences",
+    "financialOverview": "3 sentences"
   },
   "tasks": [
-    { "id": "task-1", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "High", "owner": "Founder", "status": "Todo" },
-    { "id": "task-2", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "Medium", "owner": "Manager", "status": "Todo" },
-    { "id": "task-3", "name": "Task name", "desc": "Task description", "duration": "3 weeks", "priority": "High", "owner": "Founder", "status": "Todo" },
-    { "id": "task-4", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Low", "owner": "Team", "status": "Todo" },
-    { "id": "task-5", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" },
-    { "id": "task-6", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Medium", "owner": "Manager", "status": "Todo" },
-    { "id": "task-7", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" },
-    { "id": "task-8", "name": "Task name", "desc": "Task description", "duration": "3 weeks", "priority": "Medium", "owner": "Team", "status": "Todo" },
-    { "id": "task-9", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Low", "owner": "Manager", "status": "Todo" },
-    { "id": "task-10", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" }
+    { "id": "task-1", "name": "", "desc": "", "duration": "", "priority": "High", "owner": "", "status": "Todo" },
+    { "id": "task-2", "name": "", "desc": "", "duration": "", "priority": "Medium", "owner": "", "status": "Todo" },
+    { "id": "task-3", "name": "", "desc": "", "duration": "", "priority": "High", "owner": "", "status": "Todo" },
+    { "id": "task-4", "name": "", "desc": "", "duration": "", "priority": "Low", "owner": "", "status": "Todo" },
+    { "id": "task-5", "name": "", "desc": "", "duration": "", "priority": "High", "owner": "", "status": "Todo" },
+    { "id": "task-6", "name": "", "desc": "", "duration": "", "priority": "Medium", "owner": "", "status": "Todo" },
+    { "id": "task-7", "name": "", "desc": "", "duration": "", "priority": "High", "owner": "", "status": "Todo" },
+    { "id": "task-8", "name": "", "desc": "", "duration": "", "priority": "Medium", "owner": "", "status": "Todo" },
+    { "id": "task-9", "name": "", "desc": "", "duration": "", "priority": "Low", "owner": "", "status": "Todo" },
+    { "id": "task-10", "name": "", "desc": "", "duration": "", "priority": "High", "owner": "", "status": "Todo" }
   ],
   "costEstimates": {
-    "startup": {
-      "development": 0,
-      "design": 0,
-      "marketing": 0,
-      "legal": 0,
-      "infrastructure": 0,
-      "miscellaneous": 0
-    },
-    "monthly": {
-      "salaries": 0,
-      "hosting": 0,
-      "marketing": 0,
-      "tools": 0,
-      "support": 0
-    },
+    "startup": { "development": 0, "design": 0, "marketing": 0, "legal": 0, "infrastructure": 0, "miscellaneous": 0 },
+    "monthly": { "salaries": 0, "hosting": 0, "marketing": 0, "tools": 0, "support": 0 },
     "timeToRevenue": "3 months",
     "breakEvenMonth": 12,
     "year1Revenue": 0,
@@ -131,12 +111,12 @@ JSON STRUCTURE (follow exactly):
     "year3Revenue": 0
   },
   "risks": [
-    { "id": "risk-1", "name": "Risk name", "category": "Market", "desc": "Risk description", "severity": "High", "likelihood": "Medium", "mitigation": "Mitigation strategy" },
-    { "id": "risk-2", "name": "Risk name", "category": "Financial", "desc": "Risk description", "severity": "Medium", "likelihood": "High", "mitigation": "Mitigation strategy" },
-    { "id": "risk-3", "name": "Risk name", "category": "Operational", "desc": "Risk description", "severity": "High", "likelihood": "Low", "mitigation": "Mitigation strategy" },
-    { "id": "risk-4", "name": "Risk name", "category": "Legal", "desc": "Risk description", "severity": "Medium", "likelihood": "Medium", "mitigation": "Mitigation strategy" },
-    { "id": "risk-5", "name": "Risk name", "category": "Market", "desc": "Risk description", "severity": "Low", "likelihood": "High", "mitigation": "Mitigation strategy" },
-    { "id": "risk-6", "name": "Risk name", "category": "Operational", "desc": "Risk description", "severity": "High", "likelihood": "Medium", "mitigation": "Mitigation strategy" }
+    { "id": "risk-1", "name": "", "category": "Market", "desc": "", "severity": "High", "likelihood": "Medium", "mitigation": "" },
+    { "id": "risk-2", "name": "", "category": "Financial", "desc": "", "severity": "Medium", "likelihood": "High", "mitigation": "" },
+    { "id": "risk-3", "name": "", "category": "Operational", "desc": "", "severity": "High", "likelihood": "Low", "mitigation": "" },
+    { "id": "risk-4", "name": "", "category": "Legal", "desc": "", "severity": "Medium", "likelihood": "Medium", "mitigation": "" },
+    { "id": "risk-5", "name": "", "category": "Market", "desc": "", "severity": "Low", "likelihood": "High", "mitigation": "" },
+    { "id": "risk-6", "name": "", "category": "Operational", "desc": "", "severity": "High", "likelihood": "Medium", "mitigation": "" }
   ]
 }`;
 
