@@ -29,12 +29,12 @@ const ideaExamples = [
 ];
 
 const loadingSteps = [
-  { icon: Brain,        label: 'Analyzing your business idea...',   color: 'text-brand-400'   },
-  { icon: TrendingUp,   label: 'Generating market analysis...',     color: 'text-emerald-400' },
-  { icon: ListChecks,   label: 'Building task roadmap...',          color: 'text-accent-400'  },
-  { icon: Zap,          label: 'Estimating costs & revenue...',     color: 'text-amber-400'   },
-  { icon: Shield,       label: 'Identifying risks & mitigations...', color: 'text-rose-400'   },
-  { icon: CheckCircle2, label: 'Finalizing your plan...',           color: 'text-emerald-400' },
+  { icon: Brain,        label: 'Analyzing your business idea...',    color: 'text-brand-400'   },
+  { icon: TrendingUp,   label: 'Generating market analysis...',      color: 'text-emerald-400' },
+  { icon: ListChecks,   label: 'Building task roadmap...',           color: 'text-accent-400'  },
+  { icon: Zap,          label: 'Estimating costs & revenue...',      color: 'text-amber-400'   },
+  { icon: Shield,       label: 'Identifying risks & mitigations...', color: 'text-rose-400'    },
+  { icon: CheckCircle2, label: 'Finalizing your plan...',            color: 'text-emerald-400' },
 ];
 
 export default function NewPlan() {
@@ -289,20 +289,6 @@ function LoadingScreen({ loadStep }) {
         </div>
         <p className="text-xs text-slate-600 mt-2">
           Step {loadStep + 1} of {loadingSteps.length}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-          <motion.div
-            animate={{ width: `${Math.round((loadStep / (loadingSteps.length - 1)) * 100)}%` }}
-            transition={{ duration: 0.5 }}
-            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500"
-          />
-        </div>
-        <p className="text-xs text-slate-600 mt-2 text-center">
-          {Math.round((loadStep / (loadingSteps.length - 1)) * 100)}% complete
         </p>
       </div>
     </motion.div>
