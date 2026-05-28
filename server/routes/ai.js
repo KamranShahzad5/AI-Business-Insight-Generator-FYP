@@ -132,14 +132,21 @@ Generate exactly 10-12 tasks and exactly 6-8 risks, all highly specific to the i
       return res.status(500).json({ msg: 'Groq returned an empty response. Check your API key at https://console.groq.com/' });
     }
 
-    let aiData;
+  let aiData;
     try {
       aiData = JSON.parse(cleanJSON(rawText));
     } catch (parseErr) {
-      console.error('JSON parse error. Raw Grok response:\n', rawText.slice(0, 500));
-      return res.status(500).json({
-        msg: 'AI returned malformed JSON. This can happen with complex prompts — please try again.',
-      });
+      console.error('JSON parse error. Raw response:\n', rawText.slice(0, 800));
+      // Try one more time with a simpler extraction
+      try {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        if (match) aiData = JSON.parse(match[0]);
+        else throw new Error('No JSON found');
+      } catch {
+        return res.status(500).json({
+          msg: 'AI returned malformed JSON. Please try again.',
+        });
+      }
     }
 
     // Validate required fields exist
