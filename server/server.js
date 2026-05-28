@@ -2,19 +2,21 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-
 const app = express();
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
   'http://localhost:3000',
-  process.env.CLIENT_URL,          // e.g. https://your-app.vercel.app
+  'https://ai-business-insight-generator-fyp.vercel.app',
+  process.env.CLIENT_URL,
 ].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     if (allowedOrigins.some(o => origin.startsWith(o))) {
       return callback(null, true);
@@ -23,6 +25,7 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 app.use(express.json({ limit: '10mb' }));
 
 // ── Health Check ────────────────────────────────────────────────────────────
