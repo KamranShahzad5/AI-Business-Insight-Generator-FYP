@@ -2,14 +2,10 @@ const express = require('express');
 const router = express.Router();
 const OpenAI = require('openai');
 
-// ── Helper: get a verified Groq client (free tier at console.groq.com) ────────
 const getGroqClient = () => {
   const key = process.env.GROQ_API_KEY;
   if (!key || key.includes('your_actual') || key.trim() === '') {
-    throw new Error(
-      'GROQ_API_KEY is missing or still set to the placeholder. ' +
-      'Open backend/.env and set it to your real Groq API key from https://console.groq.com/'
-    );
+    throw new Error('GROQ_API_KEY is missing or invalid.');
   }
   return new OpenAI({
     apiKey: key,
@@ -17,22 +13,55 @@ const getGroqClient = () => {
   });
 };
 
-// ── Helper: strip markdown fences from AI output ─────────────────────────────
 const cleanJSON = (text) => {
   let t = text.trim();
-  // Remove markdown code fences
   t = t.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/g, '');
-  // Find the first { and last } to extract pure JSON
   const start = t.indexOf('{');
   const end = t.lastIndexOf('}');
-  if (start !== -1 && end !== -1) {
-    t = t.slice(start, end + 1);
-  }
+  if (start !== -1 && end !== -1) t = t.slice(start, end + 1);
   return t.trim();
 };
 
+const parseWithRetry = async (client, messages, attempt = 1) => {
+  const completion = await client.chat.completions.create({
+    model: 'llama-3.1-8b-instant',
+    messages,
+    temperature: attempt === 1 ? 0.7 : 0.3, // lower temp on retry
+    max_tokens: 4000,
+  });
+
+  const rawText = completion.choices[0]?.message?.content || '';
+
+  if (!rawText || rawText.trim().length === 0) {
+    throw new Error('AI returned an empty response.');
+  }
+
+  try {
+    return JSON.parse(cleanJSON(rawText));
+  } catch (e) {
+    if (attempt < 3) {
+      console.log(`JSON parse failed on attempt ${attempt}, retrying...`);
+      // Add a message asking to fix the JSON
+      messages.push({ role: 'assistant', content: rawText });
+      messages.push({
+        role: 'user',
+        content: 'Your response contained invalid JSON. Return ONLY the corrected valid JSON object with no markdown, no backticks, no explanation. Just the raw JSON starting with { and ending with }.'
+      });
+      return parseWithRetry(client, messages, attempt + 1);
+    }
+    // Last attempt: try regex extraction
+    const match = rawText.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {}
+    }
+    console.error('All parse attempts failed. Raw:', rawText.slice(0, 500));
+    throw new Error('AI returned malformed JSON after 3 attempts. Please try again.');
+  }
+};
+
 // ── POST /api/ai/generate ───────────────────────────────────────────────────
-// Generates a full business plan (tasks, costs, risks, business plan sections)
 router.post('/generate', async (req, res) => {
   try {
     const { idea, industry, budget } = req.body;
@@ -43,41 +72,41 @@ router.post('/generate', async (req, res) => {
 
     const client = getGroqClient();
 
-    const prompt = `You are an expert AI business advisor and startup consultant.
-Generate a comprehensive business plan for the following business idea.
+    const prompt = `You are an expert AI business advisor. Generate a business plan as a single valid JSON object.
 
-Idea: "${idea}"
-Industry: ${industry}
-Budget: PKR ${budget}
+BUSINESS IDEA: "${idea}"
+INDUSTRY: ${industry}
+BUDGET: PKR ${budget}
 
-CRITICAL RULES:
-- All tasks and risks MUST be highly specific to the given idea — no generic filler.
-- For software/app/SaaS ideas: include technical phases (Architecture, Frontend, Backend API, QA/SQA, CI/CD, Security Audit, etc.).
-- For physical/traditional businesses (restaurant, car rental, retail): include operational tasks (location scouting, licensing, inventory, staff hiring, local marketing, insurance) — NO software development tasks.
-- All monetary values must be realistic numbers in Pakistani Rupees (PKR) based on the given budget of PKR ${budget}. Do not use dollar signs ($) in descriptions; represent all calculations as integers in PKR.
+STRICT RULES:
+1. Return ONLY raw JSON — no markdown, no backticks, no text before or after
+2. All money values must be integers in PKR (no dollar signs)
+3. Tasks and risks must be specific to the idea above
+4. Generate exactly 10 tasks and exactly 6 risks
+5. Every string value must use straight quotes and no unescaped special characters
 
-Return ONLY a valid JSON object — no markdown, no backticks, no explanation before or after. Just the raw JSON:
-
+JSON STRUCTURE (follow exactly):
 {
-  "title": "A short catchy venture name",
+  "title": "Short catchy business name",
   "businessPlan": {
-    "executiveSummary": "...",
-    "marketAnalysis": "...",
-    "productDescription": "...",
-    "marketingStrategy": "...",
-    "operationsPlan": "...",
-    "financialOverview": "..."
+    "executiveSummary": "3-4 sentences about the business",
+    "marketAnalysis": "3-4 sentences about the market",
+    "productDescription": "3-4 sentences about the product/service",
+    "marketingStrategy": "3-4 sentences about marketing",
+    "operationsPlan": "3-4 sentences about operations",
+    "financialOverview": "3-4 sentences about financials"
   },
   "tasks": [
-    {
-      "id": "task-1",
-      "name": "...",
-      "desc": "...",
-      "duration": "...",
-      "priority": "High",
-      "owner": "...",
-      "status": "Todo"
-    }
+    { "id": "task-1", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "High", "owner": "Founder", "status": "Todo" },
+    { "id": "task-2", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "Medium", "owner": "Manager", "status": "Todo" },
+    { "id": "task-3", "name": "Task name", "desc": "Task description", "duration": "3 weeks", "priority": "High", "owner": "Founder", "status": "Todo" },
+    { "id": "task-4", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Low", "owner": "Team", "status": "Todo" },
+    { "id": "task-5", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" },
+    { "id": "task-6", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Medium", "owner": "Manager", "status": "Todo" },
+    { "id": "task-7", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" },
+    { "id": "task-8", "name": "Task name", "desc": "Task description", "duration": "3 weeks", "priority": "Medium", "owner": "Team", "status": "Todo" },
+    { "id": "task-9", "name": "Task name", "desc": "Task description", "duration": "2 weeks", "priority": "Low", "owner": "Manager", "status": "Todo" },
+    { "id": "task-10", "name": "Task name", "desc": "Task description", "duration": "1 week", "priority": "High", "owner": "Founder", "status": "Todo" }
   ],
   "costEstimates": {
     "startup": {
@@ -95,82 +124,46 @@ Return ONLY a valid JSON object — no markdown, no backticks, no explanation be
       "tools": 0,
       "support": 0
     },
-    "timeToRevenue": "X months",
+    "timeToRevenue": "3 months",
     "breakEvenMonth": 12,
     "year1Revenue": 0,
     "year2Revenue": 0,
     "year3Revenue": 0
   },
   "risks": [
-    {
-      "id": "risk-1",
-      "name": "...",
-      "category": "Market",
-      "desc": "...",
-      "severity": "High",
-      "likelihood": "Medium",
-      "mitigation": "..."
-    }
+    { "id": "risk-1", "name": "Risk name", "category": "Market", "desc": "Risk description", "severity": "High", "likelihood": "Medium", "mitigation": "Mitigation strategy" },
+    { "id": "risk-2", "name": "Risk name", "category": "Financial", "desc": "Risk description", "severity": "Medium", "likelihood": "High", "mitigation": "Mitigation strategy" },
+    { "id": "risk-3", "name": "Risk name", "category": "Operational", "desc": "Risk description", "severity": "High", "likelihood": "Low", "mitigation": "Mitigation strategy" },
+    { "id": "risk-4", "name": "Risk name", "category": "Legal", "desc": "Risk description", "severity": "Medium", "likelihood": "Medium", "mitigation": "Mitigation strategy" },
+    { "id": "risk-5", "name": "Risk name", "category": "Market", "desc": "Risk description", "severity": "Low", "likelihood": "High", "mitigation": "Mitigation strategy" },
+    { "id": "risk-6", "name": "Risk name", "category": "Operational", "desc": "Risk description", "severity": "High", "likelihood": "Medium", "mitigation": "Mitigation strategy" }
   ]
-}
+}`;
 
-Generate exactly 10-12 tasks and exactly 6-8 risks, all highly specific to the idea above.`;
+    const messages = [{ role: 'user', content: prompt }];
+    const aiData = await parseWithRetry(client, messages);
 
-    console.log('--- Calling Groq API ---');
-    const completion = await client.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-    });
-    console.log('--- Groq API Success ---');
-
-    const rawText = completion.choices[0]?.message?.content || '';
-
-    if (!rawText || rawText.trim().length === 0) {
-      return res.status(500).json({ msg: 'Groq returned an empty response. Check your API key at https://console.groq.com/' });
-    }
-
-  let aiData;
-    try {
-      aiData = JSON.parse(cleanJSON(rawText));
-    } catch (parseErr) {
-      console.error('JSON parse error. Raw response:\n', rawText.slice(0, 800));
-      // Try one more time with a simpler extraction
-      try {
-        const match = rawText.match(/\{[\s\S]*\}/);
-        if (match) aiData = JSON.parse(match[0]);
-        else throw new Error('No JSON found');
-      } catch {
-        return res.status(500).json({
-          msg: 'AI returned malformed JSON. Please try again.',
-        });
-      }
-    }
-
-    // Validate required fields exist
     if (!aiData.title || !aiData.businessPlan || !aiData.tasks || !aiData.costEstimates || !aiData.risks) {
       return res.status(500).json({ msg: 'AI response was incomplete. Please try again.' });
     }
 
     res.json(aiData);
   } catch (err) {
-    console.error('Groq Generation Error:', err);
-    
-    if (err.status === 403 || err.message.includes('403')) {
-      return res.status(403).json({ msg: 'Groq API Access Denied. Details: ' + (err.error?.message || err.message) });
+    console.error('Groq Generation Error:', err.message);
+    if (err.status === 403 || (err.message && err.message.includes('403'))) {
+      return res.status(403).json({ msg: 'Groq API access denied: ' + err.message });
     }
-    if (err.status === 401 || err.message.includes('401')) {
+    if (err.status === 401 || (err.message && err.message.includes('401'))) {
       return res.status(401).json({ msg: 'Invalid Groq API Key.' });
     }
-    
+    if (err.status === 429 || (err.message && err.message.includes('429'))) {
+      return res.status(429).json({ msg: 'Groq rate limit reached. Please wait a moment and try again.' });
+    }
     res.status(500).json({ msg: err.message || 'Error generating AI plan' });
   }
 });
 
 // ── POST /api/ai/chat ───────────────────────────────────────────────────────
-// Generates a contextual chat reply about the user's specific plan
 router.post('/chat', async (req, res) => {
   try {
     const { message, planContext } = req.body;
@@ -186,25 +179,24 @@ router.post('/chat', async (req, res) => {
 Business Idea: ${planContext.idea}
 Industry: ${planContext.industry}
 
-Generated Plan Summary:
+Plan Summary:
 - Cost Estimates: ${JSON.stringify(planContext.costEstimates)}
-- Top Risks: ${JSON.stringify((planContext.risks || []).map((r) => r.name))}
-- Tasks: ${JSON.stringify((planContext.tasks || []).map((t) => t.name))}
+- Top Risks: ${JSON.stringify((planContext.risks || []).map(r => r.name))}
+- Tasks: ${JSON.stringify((planContext.tasks || []).map(t => t.name))}
 
 User Question: "${message}"
 
 Instructions:
 - Give a specific, professional, and concise answer.
-- Reference exact numbers, task names, or risks from the plan data above when relevant.
+- Reference exact numbers, task names, or risks from the plan when relevant.
 - Use markdown for formatting (bullet points, bold for key terms).
-- Do NOT give generic startup advice that ignores the plan data.`;
+- Do NOT give generic advice that ignores the plan data.`;
 
     const completion = await client.chat.completions.create({
       model: 'llama-3.1-8b-instant',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
+      messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
+      max_tokens: 1000,
     });
 
     const reply = completion.choices[0]?.message?.content || '';
@@ -216,14 +208,12 @@ Instructions:
     res.json({ reply });
   } catch (err) {
     console.error('AI Chat Error:', err.message);
-
-    if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('API key') || err.message.includes('Invalid API Key')) {
-      return res.status(401).json({ msg: 'Invalid Groq API key. Update GROQ_API_KEY in backend/.env' });
+    if (err.message.includes('401') || err.message.includes('API key')) {
+      return res.status(401).json({ msg: 'Invalid Groq API key.' });
     }
-    if (err.message.includes('429') || err.message.includes('rate limit') || err.message.includes('Rate limit')) {
-      return res.status(429).json({ msg: 'Groq API rate limit reached. Try again in a moment.' });
+    if (err.message.includes('429') || err.message.includes('rate limit')) {
+      return res.status(429).json({ msg: 'Groq rate limit reached. Try again in a moment.' });
     }
-
     res.status(500).json({ msg: err.message || 'Error generating chat reply' });
   }
 });
