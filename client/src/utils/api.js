@@ -95,8 +95,8 @@ export const api = {
 
 // ── Market Research ───────────────────────────────────────────────────────
 export const getMarketResearch = (idea, industry, budget) => {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  return fetch(`${API_URL}/market/research`, {
+  const url = import.meta.env.VITE_API_URL || 'https://ai-business-insight-generator-fyp-2.onrender.com/api';
+  return fetch(`${url}/market/research`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idea, industry, budget }),
@@ -104,5 +104,10 @@ export const getMarketResearch = (idea, industry, budget) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.msg || 'Market research failed');
     return data;
+  }).catch(err => {
+    if (err.message && err.message.includes('fetch')) {
+      throw new Error('Cannot connect to server. Please try again.');
+    }
+    throw err;
   });
 };
