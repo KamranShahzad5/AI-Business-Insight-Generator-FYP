@@ -48,7 +48,7 @@ const features = [
 const testimonials = [
   { name: 'Sarah Chen', role: 'Startup Founder', text: 'Insightify cut my business planning time from 3 weeks to 3 hours. The AI insights are genuinely impressive.', rating: 5 },
   { name: 'Marcus Williams', role: 'VC Analyst', text: 'The risk analysis feature alone is worth it. I use it to quickly evaluate early-stage startups.', rating: 5 },
-  { name: 'Priya Sharma', role: 'MBA Graduate', text: 'Better than most consulting decks I\'ve seen. The financial projections are surprisingly accurate.', rating: 5 },
+  { name: 'Priya Sharma', role: 'MBA Graduate', text: "Better than most consulting decks I've seen. The financial projections are surprisingly accurate.", rating: 5 },
 ];
 
 const stats = [
@@ -67,7 +67,6 @@ export default function Landing() {
 
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 md:px-16 h-16 bg-surface-950/80 backdrop-blur-xl border-b border-white/5">
-        {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center shadow-glow-sm">
             <Zap size={15} className="text-white" />
@@ -75,14 +74,12 @@ export default function Landing() {
           <span className="font-display font-bold text-white text-lg">Insightify</span>
         </div>
 
-        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-8 text-sm text-slate-400">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
           <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
           <a href="#testimonials" className="hover:text-white transition-colors">Reviews</a>
         </div>
 
-        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/login" className="text-sm text-slate-400 hover:text-white transition-colors px-4 py-2">
             Log in
@@ -92,7 +89,6 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Mobile right side */}
         <div className="flex md:hidden items-center gap-2">
           <button onClick={() => navigate('/login')} className="text-xs text-slate-400 hover:text-white px-3 py-1.5">
             Log in
@@ -178,7 +174,7 @@ export default function Landing() {
           </p>
         </motion.div>
 
-        {/* Hero mockup — hidden on small phones, visible on sm+ */}
+        {/* Hero mockup */}
         <motion.div
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
@@ -218,7 +214,7 @@ export default function Landing() {
                     <div className="w-6 h-6 rounded-full bg-brand-500/30 flex-shrink-0" />
                     <div className="h-2.5 bg-white/10 rounded w-3/4" />
                   </div>
-                  {[1,2,3,4].map(i => (
+                  {[1, 2, 3, 4].map(i => (
                     <div key={i} className="mb-3">
                       <div className={`rounded-lg p-2 mb-1 ${i % 2 === 0 ? 'bg-brand-500/10 ml-4' : 'bg-white/5'}`}>
                         <div className="h-2 bg-white/10 rounded w-full" />
@@ -313,7 +309,7 @@ export default function Landing() {
             {[
               { step: '01', title: 'Describe Your Idea', desc: 'Enter your business concept in plain English. The more detail you provide, the richer the output.', icon: '💡' },
               { step: '02', title: 'AI Generates Everything', desc: 'Our AI engine creates a full business plan, task roadmap, financial estimates, and risk assessment in seconds.', icon: '⚡' },
-              { step: '03', title: 'Refine with AI Chat', desc: 'Ask your AI advisor follow-up questions, dive deeper into any section, and iterate until it\'s perfect.', icon: '🤖' },
+              { step: '03', title: 'Refine with AI Chat', desc: "Ask your AI advisor follow-up questions, dive deeper into any section, and iterate until it's perfect.", icon: '🤖' },
             ].map((step, i) => (
               <motion.div
                 key={i}
@@ -423,50 +419,7 @@ export default function Landing() {
           © 2024 Insightify · AI Business Insight Generator · Final Year Project
         </p>
       </footer>
-    </div>
-  );
-}
 
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="card border border-brand-500/20 bg-gradient-to-br from-brand-950/50 to-accent-950/30 shadow-glow-md"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center mx-auto mb-6 shadow-glow-md">
-              <Zap size={28} className="text-white" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Ready to Build Something <span className="text-gradient">Remarkable?</span>
-            </h2>
-            <p className="text-slate-400 mb-8">
-              Join thousands of entrepreneurs who've accelerated their journey with Insightify.
-            </p>
-            <motion.button
-              onClick={() => navigate('/register')}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-primary text-base py-4 px-10 shadow-glow-md"
-            >
-              <Rocket size={18} />
-              Get Started Free
-              <ArrowRight size={16} />
-            </motion.button>
-            <p className="mt-4 text-xs text-slate-600">No credit card · Free forever · Unlimited plans</p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/5 text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center">
-            <Zap size={12} className="text-white" />
-          </div>
-          <span className="font-display font-bold text-white text-sm">Insightify</span>
-        </div>
-        <p className="text-xs text-slate-600">
-          © 2024 Insightify · AI Business Insight Generator · Final Year Project
-        </p>
-      </footer>
     </div>
   );
 }
